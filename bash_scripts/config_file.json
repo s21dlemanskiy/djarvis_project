@@ -1,0 +1,6 @@
+{
+"dir_temp_hdoop":"/tmp/djarvis_temp_files",
+"hdfs_script_directory":"/home/hdoop/hadoop-3.2.4/bin/hdfs",
+"start_hdfs":"/home/hdoop/hadoop-3.2.4/sbin/start-dfs.sh",
+"stop_hdfs":"/home/hdoop/hadoop-3.2.4/sbin/stop-dfs.sh"
+}
