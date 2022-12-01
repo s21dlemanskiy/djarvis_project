@@ -5,11 +5,14 @@ if ! [[ -n "$1" ]]; then
 	 exit 
 fi
 
-if ! sudo -u hdoop $script_directory dfs -test -d $1; then echo "folder not exixsts"; exit; fi
 
 
 
-result=$(sudo -u hdoop $script_directory dfs -ls $1)
-#result=$(sudo -u hdoop $script_directory dfs -stat "%n" "$1/*")
+if ! sudo -u hdoop $script_directory dfs -test -d $1; then echo "file not exixsts"; exit; fi
+
+
+
+result=$(sudo -u hdoop $script_directory dfs -rm -r $1/*)
 
 echo $result
+# result = "Delitet ..." if all OK
