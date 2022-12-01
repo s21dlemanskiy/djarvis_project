@@ -8,12 +8,17 @@ hdfs_script_directory=$( sudo realpath $(cat /home/koly/djarvis_project/bash_scr
 
 if ! sudo test -d "${dir_temp_hdoop}"; then
 	sudo mkdir $dir_temp_hdoop
+	sudo chmod o+wr $dir_temp_hdoop
 fi
 
 
 
 
 if [ -n "$2" ]; then
+	if ! sudo -u hdoop  ${hdfs_script_directory} dfs -test -e $2; then
+		echo "target directory not exists";
+		exit
+	fi
 	target_directory=$2
 else
 	target_directory="/test"

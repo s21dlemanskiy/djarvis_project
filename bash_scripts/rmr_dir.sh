@@ -8,7 +8,7 @@ fi
 
 
 
-if ! sudo -u hdoop $script_directory dfs -test -d $1; then echo "file not exixsts"; exit; fi
+if (! sudo -u hdoop $script_directory dfs -test -e $1) && (! sudo -u hdoop $script_directory dfs -test -d $1); then echo "file not exixsts"; exit; fi
 
 
 
