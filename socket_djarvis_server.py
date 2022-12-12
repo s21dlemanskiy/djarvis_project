@@ -33,7 +33,7 @@ def put_file(conn, login, db_conn):  # < target_dir < file < file_type < descrip
     wd = db.work_directory(login, db_conn)
     if not wd:
         report += "[Erorre...]cant find user in DB while serching work_directory\n"
-        send_status(report)
+        send_status(conn, report)
         return 
     while len(target_dir) > 0 and target_dir[0] == "/": 
         target_dir = target_dir[1:]
