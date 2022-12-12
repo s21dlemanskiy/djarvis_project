@@ -1,5 +1,6 @@
 import socket 
-import threadinig
+import threading
+import sqlite3
 import os
 import re
 import dbase_API as db
@@ -15,25 +16,32 @@ STATUS_LENGTH = 512
 server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 server.bind(ADDR)
 
-def use_CV_on_file(db_conn, file:bytes, id1:int):
+def use_CV_on_file(file:bytes, id1:int): 
+    db_conn = sqlite3.connect('Usrs.db')
     print("типо юзаем алгоритмы МЛ")
     import time
     time.sleep(5)
     db.set_result(db_conn, id1, "CV_result")
 
-def put_file(conn, login, db_conn):  # < target_dir < file_name < file_type (if target_dir= / store in user dir else in user_dir/ target_dir)
+def put_file(conn, login, db_conn):  # < target_dir < file < file_type < description < file_extension (if target_dir= / store in user dir else in user_dir/ target_dir)
     report = ""
+    target_dir = recive_massage(conn).decode(FORMAT)
+    file = recive_massage(conn)
+    file_type = recive_massage(conn).decode(FORMAT) #тип файла: паспорт\снилс...
+    description = recive_massage(conn).decode(FORMAT) #описание файла
+    file_extension = recive_massage(conn).decode(FORMAT)
     wd = db.work_directory(login, db_conn)
     if not wd:
         report += "[Erorre...]cant find user in DB while serching work_directory\n"
         send_status(report)
         return 
-    target_dir = recive_massage(conn)
+    while len(target_dir) > 0 and target_dir[0] == "/": 
+        target_dir = target_dir[1:]
     target_dir = os.path.join(wd, target_dir)
     r, ls_result = hdfs.ls_dir(target_dir)
     report += r
     if ls_result is None:
-        send_status(report)
+        send_status(conn, report)
         return
     if len(ls_result["files"]) == 0:
         name = f"{login}_0"
@@ -47,18 +55,16 @@ def put_file(conn, login, db_conn):  # < target_dir < file_name < file_type (if 
         #    if string:
         #        num = max(num, string)
         name = f"{login}_{num + 1}"
-    file = recive_massage(conn)
+    name += file_extension
     r, status = hdfs.put_file(file, name, target_dir)
-    repport += r
+    report += r
     if not status:
-        send_status(report)
+        send_status(conn, report)
         return
     full_file_path = os.path.join(target_dir, name)
-    file_type = recive_massage(conn) #тип файла: паспорт\снилс...
-    description = recive_massage(conn) #тип файла: паспорт\снилс...
     id1 = db.put_file_in_result_table(db_conn, login, full_file_path, file_type, description)
-    send_status("success!")
-    thread = threading.Thread(target=use_CV_on_file, args=(db_conn, file, id1))
+    send_status(conn, "success!")
+    thread = threading.Thread(target=use_CV_on_file, args=(file, id1))
     thread.start()
 
 
@@ -80,7 +86,7 @@ def recive_massage(conn):
     msg_length = conn.recv(HEADER).decode(FORMAT)
     if msg_length:
         msg_length = int(msg_length)
-        msg = conn.recv(msg_length).decode(FORMAT)
+        msg = conn.recv(msg_length)
         return msg.rstrip()
     return None
 
@@ -90,13 +96,13 @@ def handle_client(conn, addr):
 
     print(f"[NEW CONNECTION] {addr} connected.")
     connected = True
-    login = recive_massage(conn)
-    password = hash(recive_massage(conn))
+    login = recive_massage(conn).decode(FORMAT)
+    password = hash(recive_massage(conn).decode(FORMAT))
     if not check_pass(login, password):
         conn.close()
         return None
     while connected:
-        msg = recive_massage(conn)
+        msg = recive_massage(conn).decode(FORMAT)
         if msg == DISCONNECT_MESSAGE:
             connected = False
         elif msg == "put_file":
@@ -108,8 +114,17 @@ def handle_client(conn, addr):
         print(f"[{addr}] {msg}")
         send_status(conn, "Msg received")
     conn.close()
-                                                                                                                                    
+
+
+
+def create_tmp_dir():
+    dir_temp_hdoop, _, _, _ = hdfs.get_vars()
+    if not os.path.exists(dir_temp_hdoop):
+        os.mkdir(dir_temp_hdoop)
+
+
 def start():
+    create_tmp_dir()
     DB_CONN = sqlite3.connect('Usrs.db')
     db.crate_user_table_if_not_exists(DB_CONN)
     db.crate_result_table_if_not_exists(DB_CONN)
