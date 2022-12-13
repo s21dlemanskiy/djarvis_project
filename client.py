@@ -1,5 +1,6 @@
 import socket
-
+import json
+from typing import Tuple
 HEADER = 64
 PORT = 2345
 FORMAT = 'utf-8'
@@ -8,14 +9,42 @@ SERVER = "0.0.0.0"
 ADDR = (SERVER, PORT)
 STATUS_LENGTH = 512
 
-client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-client.connect(ADDR)
+client = None
+def set_up():
+    global client
+    client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    client.connect(ADDR)
+    print("client connected")
 
-def autarisation(login, password):
+def autarisation(login, password) -> bool:
     send(login.encode(FORMAT))
     send(password.encode(FORMAT))
+    answer = recive_status_answer()
+    if answer != "success!":
+        print(answer)
+        return False
+    else:
+        return True
 
-def put_file(file_path: str, target_dir: str, file_type: str, description: str, file_extension: str) -> None:
+
+def get_list_for_cofirm() -> Tuple[Tuple[str, str]]:
+    send("get_list_for_cofirm".encode(FORMAT))
+    data = json.loads(recive_massage().decode("utf-8"))
+    return data
+
+def get_file_to_confirm(id1: int) -> Tuple[None|bytes, None|str]:
+    send("get_file_to_confirm".encode(FORMAT))
+    send(str(id1).encode(FORMAT))
+    answer = recive_status_answer()
+    if not "success!" in answer:
+        print("[+]", answer)
+        return (None, None)
+    file = recive_massage()
+    cv_result = recive_massage().decode('utf-8')
+    return (file, cv_result)
+
+
+def put_file(file_path: str, target_dir: str, file_type: str, description: str, file_extension: str) -> str:
     send("put_file".encode(FORMAT))
     send(target_dir.encode(FORMAT))
     with open(file_path, 'br') as f:
@@ -24,6 +53,17 @@ def put_file(file_path: str, target_dir: str, file_type: str, description: str, 
     send(description.encode(FORMAT))
     send(file_extension.encode(FORMAT))
     return recive_status_answer()
+
+
+def recive_massage() -> str|None:
+    msg_length = client.recv(HEADER).decode(FORMAT)
+    if msg_length:
+        msg_length = int(msg_length)
+        msg = client.recv(msg_length)
+        return msg.rstrip()
+    return None
+
+
 
 def send(message: bytes):
     msg_length = len(message)
@@ -35,11 +75,13 @@ def send(message: bytes):
 def recive_status_answer() -> str:
     return client.recv(STATUS_LENGTH).decode(FORMAT)
 
-
-def setup():
-    autarisation("admin", "admin")
-
-setup()
-a = put_file("1.txt", "", "some_type", "testing data", ".txt")
-print(a)
-send(DISCONNECT_MESSAGE.encode(FORMAT))
+if __name__ == "__main__":
+    set_up()
+    autarisation("test", "test")
+    #print(put_file("./test/1.txt", "test", "smth", "smth else", ".txt"))
+    a = get_list_for_cofirm()
+    print(a)
+    id1 = a[0][0]
+    a = get_file_to_confirm(id1)
+    print(a)
+    send(DISCONNECT_MESSAGE.encode("utf-8"))

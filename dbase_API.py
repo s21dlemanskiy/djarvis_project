@@ -1,6 +1,7 @@
 import sqlite3
 import subprocess
 from typing import Tuple
+from hashin_function import my_hash
 
 def crate_user_table_if_not_exists(CONN):
     curs = CONN.cursor()
@@ -8,7 +9,7 @@ def crate_user_table_if_not_exists(CONN):
             CREATE TABLE IF NOT EXISTS USERS (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 login varchar(128),
-                password_hash INTEGER,
+                password_hash varchar(512),
                 work_directory varchar(128)
                 );
     """)
@@ -38,8 +39,10 @@ def work_directory(login: str, CONN) -> str:
                         FROM USERS
                         WHERE login = ?
                    """, (login,))
-        return cursor.fetchone()[0]
-                                                                                    
+        try:
+            return cursor.fetchone()[0]
+        except TypeError:
+            return None
 
 def put_file_in_result_table(CONN, login: str, file_path: str, file_type: str, description) -> int:#login - user login that storage file file_path - full file path from root to file file_type - type of document: passport\snils\...
     curs = CONN.cursor()
@@ -51,14 +54,14 @@ def put_file_in_result_table(CONN, login: str, file_path: str, file_type: str, d
     return curs.lastrowid
 
 
-def confirm_results(CONN, id1: int, result: str): #set result from client
+def confirm_result(CONN, login:str, id1: int, result: str): #set result from client
     curs = CONN.cursor()
     curs.execute("""
             UPDATE RESULT 
             SET confirm = 1,
                 result = ?
-            WHERE id = ?
-            """, (result, id1))
+            WHERE id = ? AND login = ?
+            """, (result, id1, login))
     CONN.commit()
 
 
@@ -74,15 +77,30 @@ def set_result(CONN, id1: int, result: str):  #set result = result of CV
 
 
 def data_about_result(CONN, login: str, file_path: str) -> Tuple[int, str, str]: #return (id, result, description)
-        cursor = CONN.cursor()
-        cursor.execute("""
+    cursor = CONN.cursor()
+    cursor.execute("""
                         SELECT id,
                                result,
                                description
                         FROM RESULT
                         WHERE login = ? AND file_full_name = ?
                    """, (login, file_path))
-        return cursor.fetchone()
+    return cursor.fetchone()
+
+
+def get_file_path_by_id(CONN, login:str, id1:str) -> Tuple[str, str]:
+    cursor = CONN.cursor()
+    cursor.execute("""
+                        SELECT file_full_name,
+                            result
+                        FROM RESULT
+                        WHERE login = ? AND id = ?
+                   """, (login, id1))
+    try:
+        data = cursor.fetchone()
+        return (data[0], data[1])
+    except TypeError:
+        return ("not found", "not found")
 
 
 def select_not_confirm(CONN, login: str) -> Tuple[Tuple[int, str, str]]: # return list of tuples with id and file path that aren't confirmed
@@ -116,3 +134,15 @@ def check_login_exist(login: str, curs) -> bool:
                   ''', (login, ))
     return bool(curs.fetchone())
 
+
+def check_user(CONN, login:str, password_hash:str) -> bool:
+    cursor = CONN.cursor()
+    #print((login, password_hash), "+++++++++++++++++++++++++++++++++++++")
+    cursor.execute("""
+                    SELECT * 
+                    FROM USERS
+                    WHERE login = ? and password_hash = ?
+                """, (login, password_hash))
+    a = cursor.fetchall()
+    #print(a)
+    return len(a) > 0

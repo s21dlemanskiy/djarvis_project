@@ -1,12 +1,14 @@
 import sqlite3
 import subprocess
+from hashin_function import my_hash
+
 
 def crate_table_if_not_exists(curs):
     curs.execute("""
             CREATE TABLE IF NOT EXISTS USERS (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 login varchar(128),
-                password_hash INTEGER,
+                password_hash varchar(512),
                 work_directory varchar(128)
                 );
     """)
@@ -15,7 +17,7 @@ def crate_table_if_not_exists(curs):
 
 def check_login_exist(login: str, curs) -> bool:
     curs.execute('''
-                      SELECT * from Users
+                      SELECT * from USERS
                       WHERE login = ?
                   ''', (login, ))
     return bool(curs.fetchone())
@@ -52,7 +54,7 @@ def add_user(login: str, password_hash:int, work_directory:str) -> None:
 
 def start():
     login = input("login:")
-    password_hash = hash(input("password:"))
+    password_hash = my_hash(input("password:"))
     work_directory = input("working_directory")
     add_user(login, password_hash, work_directory)
 
