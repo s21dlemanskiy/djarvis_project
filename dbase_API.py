@@ -54,7 +54,7 @@ def put_file_in_result_table(CONN, login: str, file_path: str, file_type: str, d
     return curs.lastrowid
 
 
-def confirm_result(CONN, login:str, id1: int, result: str): #set result from client
+def confirm_result(CONN, login:str, id1: int, result: str) -> int: #return count modifited rows||set result from client
     curs = CONN.cursor()
     curs.execute("""
             UPDATE RESULT 
@@ -63,6 +63,7 @@ def confirm_result(CONN, login:str, id1: int, result: str): #set result from cli
             WHERE id = ? AND login = ?
             """, (result, id1, login))
     CONN.commit()
+    return curs.rowcount
 
 
 def set_result(CONN, id1: int, result: str):  #set result = result of CV
@@ -98,6 +99,7 @@ def get_file_path_by_id(CONN, login:str, id1:str) -> Tuple[str, str]:
                    """, (login, id1))
     try:
         data = cursor.fetchone()
+        print(data)
         return (data[0], data[1])
     except TypeError:
         return ("not found", "not found")

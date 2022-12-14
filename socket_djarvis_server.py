@@ -81,6 +81,9 @@ def send_file_to_confirm(conn, login:str, db_conn):
         report += "can't find file path in a table"
         send_status(conn, report)
         return
+    elif cv_result is None:
+        report += "CV algoritm don't give result yet"
+        send_status(conn, report)
     else:
         report += "file path founded\n"
     r2, file = hdfs.get_file(path)
@@ -94,6 +97,18 @@ def send_file_to_confirm(conn, login:str, db_conn):
     send(conn, file)
     send(conn, cv_result.encode("utf-8"))
     
+
+
+def confirm_user_result(conn, login:str, db_conn):
+    id1 = int(recive_massage(conn).decode(FORMAT))
+    user_result = recive_massage(conn).decode(FORMAT)
+    send_status(conn, str(db.confirm_result(db_conn, login, id1, user_result)))
+
+
+def download_confirmed(conn, login:str, db_conn):
+    send(conn, json.dumps(db.select_all_confirm(db_conn, login)).encode("utf-8"))
+
+
 
 def check_pass(db_conn, login:str, password_hash:str) -> bool:
     return db.check_user(db_conn, login, password_hash)
@@ -143,6 +158,10 @@ def handle_client(conn, addr):
             send_list_to_confirm(conn, login, DB_CONN)
         elif msg == "get_file_to_confirm":
              send_file_to_confirm(conn, login, DB_CONN)
+        elif msg == "confirm":
+            confirm_user_result(conn, login, DB_CONN)
+        elif msg == "download_confirmed":
+            download_confirmed(conn, login, DB_CONN)
         else:
             print(f"[ERRORE] command {msg} recived from {addr}: NOT FOUND")
         print(f"[{addr}] {msg}")

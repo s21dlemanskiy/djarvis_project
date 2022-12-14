@@ -1,6 +1,6 @@
 import socket
 import json
-from typing import Tuple
+from typing import Tuple, Any
 HEADER = 64
 PORT = 2345
 FORMAT = 'utf-8'
@@ -44,6 +44,21 @@ def get_file_to_confirm(id1: int) -> Tuple[None|bytes, None|str]:
     return (file, cv_result)
 
 
+def confirm_result(id1:int, user_result:str) -> int: #return count modifiter rows
+    send("confirm".encode(FORMAT))
+    send(str(id1).encode("utf-8"))
+    send(user_result.encode("utf-8"))
+    return int(recive_status_answer()) 
+
+
+def download_confirmed() -> Tuple[Tuple[Any]]:
+    send("download_confirmed".encode(FORMAT))
+    result = json.loads(recive_massage().decode("utf-8"))
+    return result
+
+
+
+
 def put_file(file_path: str, target_dir: str, file_type: str, description: str, file_extension: str) -> str:
     send("put_file".encode(FORMAT))
     send(target_dir.encode(FORMAT))
@@ -65,6 +80,7 @@ def recive_massage() -> str|None:
 
 
 
+
 def send(message: bytes):
     msg_length = len(message)
     send_length = str(msg_length).encode(FORMAT)
@@ -78,10 +94,13 @@ def recive_status_answer() -> str:
 if __name__ == "__main__":
     set_up()
     autarisation("test", "test")
-    #print(put_file("./test/1.txt", "test", "smth", "smth else", ".txt"))
+    print(put_file("./test/1.txt", "test", "smth", "smth else", ".txt"))
     a = get_list_for_cofirm()
     print(a)
     id1 = a[0][0]
     a = get_file_to_confirm(id1)
     print(a)
+    a =  confirm_result(id1, "user_result")
+    print("edited:", a)
+    print(download_confirmed())
     send(DISCONNECT_MESSAGE.encode("utf-8"))
