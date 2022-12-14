@@ -93,6 +93,7 @@ def recive_status_answer() -> str:
 
 if __name__ == "__main__":
     set_up()
+    autarisation("test", "test2")
     autarisation("test", "test")
     print(put_file("./test/1.txt", "test", "smth", "smth else", ".txt"))
     a = get_list_for_cofirm()

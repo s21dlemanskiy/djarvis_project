@@ -139,19 +139,25 @@ def handle_client(conn, addr):
     #conectected to db with users 
     DB_CONN = sqlite3.connect('Usrs.db')
     print(f"[NEW CONNECTION] {addr} connected.")
-    connected = True
-    login = recive_massage(conn).decode(FORMAT)
-    password = my_hash(recive_massage(conn).decode(FORMAT))
-    if not check_pass(DB_CONN, login, password):
-        send_status(conn, "[Errore]login not found")
-        conn.close()
-        return None
-    else:
-        send_status(conn, "[+]login")
-    while connected:
+    while True:
+        login = recive_massage(conn).decode(FORMAT)
+        if login == DISCONNECT_MESSAGE:
+            conn.close()
+            print(f"[{addr}] DISCONECTED")
+            return None
+        password = my_hash(recive_massage(conn).decode(FORMAT))
+        if not check_pass(DB_CONN, login, password):
+            send_status(conn, "[Errore]login not found")
+        else:
+            send_status(conn, "[+]login")
+            break
+
+
+    while True:
         msg = recive_massage(conn).decode(FORMAT)
         if msg == DISCONNECT_MESSAGE:
-            connected = False
+            print(f"[{addr}] DISCONECTED")
+            break
         elif msg == "put_file":
             put_file(conn, login, DB_CONN)
         elif msg == "get_list_for_cofirm":
