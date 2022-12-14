@@ -38,7 +38,7 @@ def test_alg_one():
     
     script.set_result(CONN, id1, "result1"); assert len(script.select_not_confirm(CONN, "login")) == 1 and len(script.select_all_confirm(CONN, "login")) == 0
 
-    script.confirm_results(CONN, id1, "result2");assert len(script.select_not_confirm(CONN, "login")) == 0 and len(script.select_all_confirm(CONN, "login")) == 1
+    script.confirm_result(CONN,"login", id1, "result2");assert len(script.select_not_confirm(CONN, "login")) == 0 and len(script.select_all_confirm(CONN, "login")) == 1
 
     results = script.data_about_result(CONN, "login", "file_path"); assert results == (id1, "result2", "description")
 

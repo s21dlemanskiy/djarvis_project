@@ -84,6 +84,7 @@ def send_file_to_confirm(conn, login:str, db_conn):
     elif cv_result is None:
         report += "CV algoritm don't give result yet"
         send_status(conn, report)
+        return 
     else:
         report += "file path founded\n"
     r2, file = hdfs.get_file(path)

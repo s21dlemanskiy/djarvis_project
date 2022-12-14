@@ -20,7 +20,7 @@ def autarisation(login, password) -> bool:
     send(login.encode(FORMAT))
     send(password.encode(FORMAT))
     answer = recive_status_answer()
-    if answer != "success!":
+    if "[+]login" not in answer:
         print(answer)
         return False
     else:
