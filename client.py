@@ -6,12 +6,12 @@ PORT = 2345
 FORMAT = 'utf-8'
 DISCONNECT_MESSAGE = "!DISCONNECT"
 SERVER = "0.0.0.0"
-ADDR = (SERVER, PORT)
 STATUS_LENGTH = 512
 
 client = None
 def set_up():
     global client
+    ADDR = (SERVER, PORT)
     client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     client.connect(ADDR)
     print("client connected")
@@ -48,7 +48,7 @@ def confirm_result(id1:int, user_result:str) -> int: #return count modifiter row
     send("confirm".encode(FORMAT))
     send(str(id1).encode("utf-8"))
     send(user_result.encode("utf-8"))
-    return int(recive_status_answer()) 
+    return int(recive_status_answer())
 
 
 def download_confirmed() -> Tuple[Tuple[Any]]:
