@@ -4,7 +4,8 @@ from PyQt5.QtWidgets import QDialog, QApplication, QFileDialog, QMainWindow
 from PyQt5.uic import loadUi
 from PyQt5.QtGui import QPixmap
 import client
-client.SERVER = "51.250.108.31"
+import json
+client.SERVER = "51.250.100.220"
 
 
 class MainWindow(QMainWindow):
@@ -37,25 +38,69 @@ class MainWindow(QMainWindow):
     def main_page(self):
         loadUi("./surce/main_page.ui", self)
         self.pushButton.clicked.connect(self.browse_page)
-        self.pushButton_2.clicked.connect(self.confirm_page)
+        self.pushButton_2.clicked.connect(self.confirm_list_page)
+        self.pushButton_3.clicked.connect(self.download_results)
 
-    def confirm_page(self):
+    def download_results(self):
+        data = client.download_confirmed()
+        with open("Results.json", 'w') as f:
+            json.dump(obj=data, fp=f, indent=4)
+
+    def confirm_list_page(self):
+        loadUi("./surce/confirm_list.ui", self)
+        confirm_list = client.get_list_for_cofirm()
+        self.pushButton.clicked.connect(lambda: self.confirm_page(confirm_list))
+        print(f"confirm list:{confirm_list}")
+        self.listWidget.addItems(map(lambda x: f"file_path: {x[1]} desctiption: {x[2]}", confirm_list))
+
+
+
+
+
+    def confirm_page(self, confirm_list):
+        file_data = None
+        cv_result = None
         loadUi("./surce/confirm_page.ui", self)
-        if None:
+        self.pushButton.clicked.connect(self.main_page)
+        self.pushButton_2.clicked.connect(lambda: self.confirm(confirm_list, file_data))
+        if len(confirm_list) == 0:
+            self.massage_page(self.main_page, "all confirmed")
+            return
+        file_data = confirm_list[0]
+        file, cv_result = client.get_file_to_confirm(file_data[0])
+        if file:
+            with open('1.jpg', 'bw') as f:
+                f.write(file)
+            self.textEdit.setPlainText(cv_result.replace(",", ",\n"))
             pixmap = QPixmap()
             pixmap.loadFromData(file)
             self.label.setPixmap(pixmap)
         else:
             self.label.setPixmap(QPixmap('./surce/not_found.png'))
 
-        self.browse.clicked.connect(self.browsefiles)
+    def confirm(self, confirm_list, file_data):
+        id1 = file_data[0]
+        user_result = self.textEdit.toPlainText()
+        modified_rows = client.confirm_result(id1, user_result)
+        confirm_list.remove(file_data)
+        if modified_rows > 0:
+            self.massage_page(self.confirm_page, "whrited", confirm_list)
+        else:
+            self.massage_page(self.confirm_page, "smth gone wrong \n nothing was whrited", confirm_list)
+
     #
     def browse_page(self):
         loadUi("./surce/browse_page.ui", self)
         self.buttonBox.rejected.connect(self.main_page)
         self.buttonBox.accepted.connect(self.put_file)
-    #     fname=QFileDialog.getOpenFileName(self, 'Open file', 'D:\codefirst.io\PyQt5 tutorials\Browse Files', 'Images (*.png, *.xmp *.jpg)')
-    #     self.filename.setText(fname[0])
+        self.pushButton.clicked.connect(self.browse_file)
+
+    def browse_file(self):
+        fname=QFileDialog.getOpenFileName(self, 'Open file', './', '*.png *.xmp *.jpg *.txt')
+        self.lineEdit.setText(fname[0])
+
+
+
     def put_file(self):
         try:
             file_path = self.lineEdit.text()

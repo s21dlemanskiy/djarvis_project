@@ -1,0 +1,17 @@
+[
+    [
+        "/test/test_25.png",
+        "{'first field':'smth',\n 'second field':'smth else'}",
+        "dsa"
+    ],
+    [
+        "/test/test_26.PNG",
+        "{'first field':'smth',\n 'second field':'smth else'}",
+        "image 2"
+    ],
+    [
+        "/test/test_27.PNG",
+        "{'first field':'smth',\n 'second field':'Fuck TCP'}",
+        "test image"
+    ]
+]
