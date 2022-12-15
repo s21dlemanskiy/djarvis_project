@@ -14,23 +14,26 @@ ADDR = (SERVER, PORT)
 FORMAT = 'utf-8'
 DISCONNECT_MESSAGE = "!DISCONNECT"
 STATUS_LENGTH = 512
+BUFF_SIZE = 1024
 
 server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-
 def use_CV_on_file(file:bytes, id1:int): 
     db_conn = sqlite3.connect('Usrs.db')
     print("типо юзаем алгоритмы МЛ")
     import time
     time.sleep(5)
-    db.set_result(db_conn, id1, "CV_result")
+    db.set_result(db_conn, id1, "{'first field':'smth', 'second field':'smth else'}")
 
 def put_file(conn, login, db_conn):  # < target_dir < file < file_type < description < file_extension (if target_dir= / store in user dir else in user_dir/ target_dir)
     report = ""
     target_dir = recive_massage(conn).decode(FORMAT)
-    file = recive_massage(conn)
+    file = recive_file(conn)
+    #print(file)
     file_type = recive_massage(conn).decode(FORMAT) #тип файла: паспорт\снилс...
+    #print(f"[+]file type{file_type}") 
     description = recive_massage(conn).decode(FORMAT) #описание файла
     file_extension = recive_massage(conn).decode(FORMAT)
+    #print(f"file extension {file_extension}")
     wd = db.work_directory(login, db_conn)
     if not wd:
         report += "[Erorre...]cant find user in DB while serching work_directory\n"
@@ -57,6 +60,7 @@ def put_file(conn, login, db_conn):  # < target_dir < file < file_type < descrip
         #        num = max(num, string)
         name = f"{login}_{num + 1}"
     name += file_extension
+    #print("[+]putting file in hdfs ....")
     r, status = hdfs.put_file(file, name, target_dir)
     report += r
     if not status:
@@ -129,24 +133,62 @@ def send(conn, message: bytes):
 
 
 def recive_massage(conn) -> str|None:
-    msg_length = conn.recv(HEADER).decode(FORMAT)
+    msg_length = conn.recv(HEADER)
+    #print("\n\n\n\n", msg_length)
+    msg_length = msg_length.decode(FORMAT)
     if msg_length:
         msg_length = int(msg_length)
         msg = conn.recv(msg_length)
+        #print(msg_length)
+        #print(len(msg))
+        #print(msg)
         return msg.rstrip()
     return None
 
+
+
+def recive_file(conn) -> bytes:
+    #conn.blocking(True)
+    file_size = int(recive_massage(conn).decode('utf-8'))
+    file = b''
+    while True:
+        part = conn.recv(BUFF_SIZE)
+        file += part
+        if len(file) >= file_size:
+            break
+    print("recived_file")
+    #print(file[:1024])
+    #print()
+    #print(file[-1024:])
+    return file.rstrip()
+
+
+
 def handle_client(conn, addr):
-    #conectected to db with users 
+    #conectected to db with userstry:
     DB_CONN = sqlite3.connect('Usrs.db')
     print(f"[NEW CONNECTION] {addr} connected.")
     while True:
-        login = recive_massage(conn).decode(FORMAT)
+        try:
+            login = recive_massage(conn).decode(FORMAT)
+        except ConnectionResetError:
+            conn.close()
+            return
+        except AttributeError :
+            conn.close()
+            return
         if login == DISCONNECT_MESSAGE:
             conn.close()
             print(f"[{addr}] DISCONECTED")
             return None
-        password = my_hash(recive_massage(conn).decode(FORMAT))
+        try:
+            password = my_hash(recive_massage(conn).decode(FORMAT))
+        except ConnectionResetError:
+            conn.close()
+            return
+        except AttributeError :
+            conn.close()
+            return
         if not check_pass(DB_CONN, login, password):
             send_status(conn, "[Errore]login not found")
         else:
@@ -155,23 +197,31 @@ def handle_client(conn, addr):
 
 
     while True:
-        msg = recive_massage(conn).decode(FORMAT)
-        if msg == DISCONNECT_MESSAGE:
-            print(f"[{addr}] DISCONECTED")
-            break
-        elif msg == "put_file":
-            put_file(conn, login, DB_CONN)
-        elif msg == "get_list_for_cofirm":
-            send_list_to_confirm(conn, login, DB_CONN)
-        elif msg == "get_file_to_confirm":
-             send_file_to_confirm(conn, login, DB_CONN)
-        elif msg == "confirm":
-            confirm_user_result(conn, login, DB_CONN)
-        elif msg == "download_confirmed":
-            download_confirmed(conn, login, DB_CONN)
-        else:
-            print(f"[ERRORE] command {msg} recived from {addr}: NOT FOUND")
-        print(f"[{addr}] {msg}")
+        try:
+            msg = recive_massage(conn).decode(FORMAT)
+            if msg == DISCONNECT_MESSAGE:
+                print(f"[{addr}] DISCONECTED")
+                break
+            elif msg == "put_file":
+                put_file(conn, login, DB_CONN)
+            elif msg == "get_list_for_cofirm":
+                send_list_to_confirm(conn, login, DB_CONN)
+            elif msg == "get_file_to_confirm":
+                send_file_to_confirm(conn, login, DB_CONN)
+            elif msg == "confirm":
+                confirm_user_result(conn, login, DB_CONN)
+            elif msg == "download_confirmed":
+                download_confirmed(conn, login, DB_CONN)
+            else:
+                print(f"[ERRORE] command {msg} recived from {addr}: NOT FOUND")
+            print(f"[{addr}] {msg}")
+        except ConnectionResetError :
+            conn.close()
+            return
+        except AttributeError :
+            conn.close()
+            return
+
         #send_status(conn, "Msg received")
     conn.close()
 
