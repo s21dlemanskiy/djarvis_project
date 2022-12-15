@@ -42,7 +42,7 @@ def test_alg_one():
 
     results = script.data_about_result(CONN, "login", "file_path"); assert results == (id1, "result2", "description")
 
-    assert script.select_all_confirm(CONN, "login")[0] == ("file_path", "result2", "description")
+    assert script.select_all_confirm(CONN, "login")[0] == ("file_path", "result2","file_type", "description")
 
     script.set_result(CONN, id1, "result3"); assert len(script.select_all_confirm(CONN, "login")) == 0
 

@@ -114,7 +114,7 @@ def test_download_confirmed():
     assert a == 1
     a = client.download_confirmed()
     assert len(a) == 1
-    assert tuple(a[0]) == ("/test/test/test_0.txt", 'user_result', "testing data")
+    assert tuple(a[0]) == ("/test/test/test_0.txt", 'user_result',"some_type", "testing data")
 
 
 

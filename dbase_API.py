@@ -122,6 +122,7 @@ def select_all_confirm(CONN, login: str) -> Tuple[Tuple[str, str, str]]: # retur
     cursor.execute("""
                     SELECT file_full_name,
                            result,
+                           file_type,
                            description
                     FROM RESULT 
                     WHERE login = ? AND confirm = 1
