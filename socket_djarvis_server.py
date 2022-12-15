@@ -3,8 +3,10 @@ import threading
 import sqlite3
 import os
 import re
+import math
 import dbase_API as db
 import json
+import time
 import bash_scripts_exec as hdfs 
 from hashin_function import my_hash
 HEADER = 64
@@ -20,7 +22,6 @@ server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 def use_CV_on_file(file:bytes, id1:int): 
     db_conn = sqlite3.connect('Usrs.db')
     print("типо юзаем алгоритмы МЛ")
-    import time
     time.sleep(5)
     db.set_result(db_conn, id1, "{'first field':'smth', 'second field':'smth else'}")
 
@@ -99,7 +100,8 @@ def send_file_to_confirm(conn, login:str, db_conn):
         return
     else:
         send_status(conn, "success!")
-    send(conn, file)
+    send_file(conn, file)
+    time.sleep(1)
     send(conn, cv_result.encode("utf-8"))
     
 
@@ -111,7 +113,7 @@ def confirm_user_result(conn, login:str, db_conn):
 
 
 def download_confirmed(conn, login:str, db_conn):
-    send(conn, json.dumps(db.select_all_confirm(db_conn, login)).encode("utf-8"))
+    send_file(conn, json.dumps(db.select_all_confirm(db_conn, login)).encode("utf-8"))
 
 
 
@@ -147,6 +149,14 @@ def recive_massage(conn) -> str|None:
 
 
 
+def send_file(conn, file:bytes):
+    file_size = math.ceil(len(file) / 1024) * 1024
+    file += b' ' * (file_size - len(file))
+    send(conn, str(file_size).encode('utf-8'))
+    for i in range(0, file_size, 1024):
+        conn.send(file[i:i + 1024])
+
+
 def recive_file(conn) -> bytes:
     #conn.blocking(True)
     file_size = int(recive_massage(conn).decode('utf-8'))
@@ -159,7 +169,7 @@ def recive_file(conn) -> bytes:
     print("recived_file")
     #print(file[:1024])
     #print()
-    #print(file[-1024:])
+    print(file[-1024:])
     return file.rstrip()
 
 
