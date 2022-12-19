@@ -131,7 +131,7 @@ def recive_status_answer() -> str:
     return client.recv(STATUS_LENGTH).decode(FORMAT)
 
 if __name__ == "__main__":
-    SERVER = "51.250.100.220"
+    # SERVER = "51.250.100.220"
     set_up()
     autarisation("test", "test")
     # print(put_file("./test/1.txt", "test", "smth", "smth else", ".txt"))

@@ -5,7 +5,7 @@ from PyQt5.uic import loadUi
 from PyQt5.QtGui import QPixmap
 import client
 import json
-client.SERVER = "51.250.100.220"
+client.SERVER = "158.160.23.155"
 
 
 class MainWindow(QMainWindow):
@@ -43,13 +43,16 @@ class MainWindow(QMainWindow):
 
     def download_results(self):
         data = client.download_confirmed()
-        with open("Results.json", 'w') as f:
+        with open("Results.json", 'w', encoding='utf-8') as f:
             json.dump(obj=data, fp=f, indent=4)
+        self.massage_page(self.main_page, "Saved in 'Results.json'")
 
     def confirm_list_page(self):
         loadUi("./surce/confirm_list.ui", self)
+        # Loading...
         confirm_list = client.get_list_for_cofirm()
-        self.pushButton.clicked.connect(lambda: self.confirm_page(confirm_list))
+        self.pushButton.clicked.connect(lambda: (self.pushButton.setText('Loading...'),
+                                                self.confirm_page(confirm_list)))
         print(f"confirm list:{confirm_list}")
         self.listWidget.addItems(map(lambda x: f"file_path: {x[1]} desctiption: {x[2]}", confirm_list))
 
@@ -79,6 +82,7 @@ class MainWindow(QMainWindow):
             self.label.setPixmap(QPixmap('./surce/not_found.png'))
 
     def confirm(self, confirm_list, file_data):
+        self.pushButton_2.setText('Loading...')
         id1 = file_data[0]
         user_result = self.textEdit.toPlainText()
         modified_rows = client.confirm_result(id1, user_result)
@@ -91,17 +95,19 @@ class MainWindow(QMainWindow):
     #
     def browse_page(self):
         loadUi("./surce/browse_page.ui", self)
+        self.label_5.hide()
         self.buttonBox.rejected.connect(self.main_page)
         self.buttonBox.accepted.connect(self.put_file)
         self.pushButton.clicked.connect(self.browse_file)
 
     def browse_file(self):
-        fname=QFileDialog.getOpenFileName(self, 'Open file', './', '*.png *.xmp *.jpg *.txt')
+        fname=QFileDialog.getOpenFileName(self, 'Open file', './', '*.png *.xmp *.jpg')
         self.lineEdit.setText(fname[0])
 
 
 
     def put_file(self):
+        self.label_5.show()
         try:
             file_path = self.lineEdit.text()
             if '.' not in file_path:

@@ -1,4 +1,4 @@
-import socket 
+import socket
 import threading
 import sqlite3
 import os
@@ -7,8 +7,9 @@ import math
 import dbase_API as db
 import json
 import time
-import bash_scripts_exec as hdfs 
+import bash_scripts_exec as hdfs
 from hashin_function import my_hash
+import photo_recognizer
 HEADER = 64
 PORT = 2345
 SERVER = "0.0.0.0"#socket.gethostbyname(socket.gethostname())
@@ -19,11 +20,10 @@ STATUS_LENGTH = 512
 BUFF_SIZE = 1024
 
 server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-def use_CV_on_file(file:bytes, id1:int): 
+def use_CV_on_file(file:bytes, id1:int):
     db_conn = sqlite3.connect('Usrs.db')
-    print("типо юзаем алгоритмы МЛ")
-    time.sleep(5)
-    db.set_result(db_conn, id1, "{'first field':'smth', 'second field':'smth else'}")
+    result = photo_recognizer.end_line(file)
+    db.set_result(db_conn, id1, result)
 
 def put_file(conn, login, db_conn):  # < target_dir < file < file_type < description < file_extension (if target_dir= / store in user dir else in user_dir/ target_dir)
     report = ""
@@ -31,7 +31,7 @@ def put_file(conn, login, db_conn):  # < target_dir < file < file_type < descrip
     file = recive_file(conn)
     #print(file)
     file_type = recive_massage(conn).decode(FORMAT) #тип файла: паспорт\снилс...
-    #print(f"[+]file type{file_type}") 
+    #print(f"[+]file type{file_type}")
     description = recive_massage(conn).decode(FORMAT) #описание файла
     file_extension = recive_massage(conn).decode(FORMAT)
     #print(f"file extension {file_extension}")
@@ -39,8 +39,8 @@ def put_file(conn, login, db_conn):  # < target_dir < file < file_type < descrip
     if not wd:
         report += "[Erorre...]cant find user in DB while serching work_directory\n"
         send_status(conn, report)
-        return 
-    while len(target_dir) > 0 and target_dir[0] == "/": 
+        return
+    while len(target_dir) > 0 and target_dir[0] == "/":
         target_dir = target_dir[1:]
     target_dir = os.path.join(wd, target_dir)
     r, ls_result = hdfs.ls_dir(target_dir)
@@ -89,7 +89,7 @@ def send_file_to_confirm(conn, login:str, db_conn):
     elif cv_result is None:
         report += "CV algoritm don't give result yet"
         send_status(conn, report)
-        return 
+        return
     else:
         report += "file path founded\n"
     r2, file = hdfs.get_file(path)
@@ -103,7 +103,7 @@ def send_file_to_confirm(conn, login:str, db_conn):
     send_file(conn, file)
     time.sleep(1)
     send(conn, cv_result.encode("utf-8"))
-    
+
 
 
 def confirm_user_result(conn, login:str, db_conn):
