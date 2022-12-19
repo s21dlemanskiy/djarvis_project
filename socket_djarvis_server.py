@@ -23,6 +23,7 @@ server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 def use_CV_on_file(file:bytes, id1:int):
     db_conn = sqlite3.connect('Usrs.db')
     result = photo_recognizer.end_line(file)
+    print(result)
     db.set_result(db_conn, id1, result)
 
 def put_file(conn, login, db_conn):  # < target_dir < file < file_type < description < file_extension (if target_dir= / store in user dir else in user_dir/ target_dir)

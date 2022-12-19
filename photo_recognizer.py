@@ -8,7 +8,7 @@ def end_line(byte_im):
       img=Image.open(io.BytesIO(byte_im))
 
       #нейросеть трансформирующая фото
-      reader = easyocr.Reader(["ru"])
+      reader = easyocr.Reader(["ru"],gpu=False)
       result = reader.readtext(img, detail=0, paragraph=True)
       result=" ".join(result)
 
@@ -47,11 +47,11 @@ def end_line(byte_im):
       return a
 
 
-if __name__ == "__main__"
+if __name__ == "__main__":
     # im = Image.open('SNILS/3.jfif')
     # buf = io.BytesIO()
     # im.save(buf, format='JPEG')
     # byte_im = buf.getvalue()
-
     # b=end_line(byte_im)
     # print(b["ФИО"])
+    pass
